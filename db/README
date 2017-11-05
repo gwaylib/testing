@@ -1,0 +1,12 @@
+需要在配置文件格式如下:
+
+[master]
+# 主库
+driver: mysql
+dsn: username:passwd@tcp(42.120.16.222:3306)/hh_center?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+
+# 日志库
+[log]
+driver: mysql
+dsn: username:passwd@tcp(42.120.16.222:3306)/hh_log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+
