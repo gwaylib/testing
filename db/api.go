@@ -35,7 +35,7 @@ func Close(closer io.Closer) {
 	}
 }
 
-// 提供此懒的回滚方法，调用者不需要处理错误
+// 提供懒处理的回滚方法，调用者不需要处理错误
 func Rollback(tx *sql.Tx) {
 	err := tx.Rollback()
 
