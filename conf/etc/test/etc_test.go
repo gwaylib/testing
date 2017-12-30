@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/ot24net/datastore/conf/etc"
+	"github.com/gwaylib/datastore/conf/etc"
 )
 
 func TestEtc(t *testing.T) {

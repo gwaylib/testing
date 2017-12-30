@@ -8,8 +8,8 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/ot24net/datastore/conf/etc"
-	"github.com/ot24net/errors"
+	"github.com/gwaylib/datastore/conf/etc"
+	"github.com/gwaylib/errors"
 )
 
 // 仅继承并重写sql.DB, 不增加新的方法，

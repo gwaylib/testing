@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/go-ini/ini"
-	"github.com/ot24net/errors"
+	"github.com/gwaylib/errors"
 )
 
 var cache = sync.Map{}
