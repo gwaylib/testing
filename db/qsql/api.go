@@ -3,8 +3,8 @@ package qsql
 import (
 	"strings"
 
-	"git.ot24.net/go/engine/datastore"
-	"git.ot24.net/go/engine/errors"
+	"github.com/gwaylib/datastore"
+	"github.com/gwaylib/errors"
 )
 
 // 读取数据
