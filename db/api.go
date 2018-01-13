@@ -7,13 +7,13 @@ import (
 	"database/sql"
 	"io"
 
-	"git.ot24.net/go/engine/errors"
-	"git.ot24.net/go/engine/log"
+	"github.com/gwaylib/errors"
+	"github.com/gwaylib/log"
 )
 
 // 获取数据数连接实例
-func GetDB(etcFileName, secName string) *DB {
-	db, err := getDB(etcFileName, secName)
+func GetDB(etcFileName, sectionName string) *DB {
+	db, err := getDB(etcFileName, sectionName)
 	if err != nil {
 		panic(err)
 	}
@@ -21,8 +21,8 @@ func GetDB(etcFileName, secName string) *DB {
 }
 
 // 检查数据库是否存在并返回数据连接实例
-func HasDB(etcFileName, secName string) (*DB, error) {
-	return getDB(etcFileName, secName)
+func HasDB(etcFileName, sectionName string) (*DB, error) {
+	return getDB(etcFileName, sectionName)
 }
 
 // 提供此懒的关闭方法，调用者不需要处理错误
