@@ -36,8 +36,8 @@ func (db *DB) Close() error {
 
 var cache = sync.Map{}
 
-func getDB(etcFileName, secName string) (*DB, error) {
-	idb, ok := cache.Load(etcFileName + secName)
+func getDB(etcFileName, sectionName string) (*DB, error) {
+	idb, ok := cache.Load(etcFileName + sectionName)
 	if ok {
 		db := idb.(*DB)
 		if db != nil && !db.isClose {
@@ -50,13 +50,13 @@ func getDB(etcFileName, secName string) (*DB, error) {
 	if err != nil {
 		return nil, errors.As(err, etcFileName)
 	}
-	drvName := cfg.Section(secName).Key("driver").String()
+	drvName := cfg.Section(sectionName).Key("driver").String()
 	dsn := cfg.Section(secName).Key("dsn").String()
 	odb, err := sql.Open(drvName, dsn)
 	if err != nil {
 		return nil, errors.As(err)
 	}
 	db := &DB{DB: odb, isClose: false}
-	cache.Store(etcFileName+secName, db)
+	cache.Store(etcFileName+sectionName, db)
 	return db, nil
 }
