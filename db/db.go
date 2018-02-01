@@ -13,7 +13,7 @@ import (
 )
 
 // 仅继承并重写sql.DB, 不增加新的方法，
-// 以便可直接使用sql.DB的方法，提高访问效率与隆低使用复杂性
+// 以便可直接使用sql.DB的方法，提高访问效率与降低使用复杂性
 type DB struct {
 	*sql.DB
 	isClose bool
