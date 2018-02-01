@@ -1,12 +1,18 @@
-需要在配置文件中配置如下格式:
+需要在配置文件(假定为:"./datastore.cfg")中配置如下格式"":
 
 [master]
 # 主库
 driver: mysql
-dsn: username:passwd@tcp(42.120.16.222:3306)/hh_center?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+dsn: username:passwd@tcp(127.0.0.1:3306)/hh_center?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
 
 # 日志库
 [log]
 driver: mysql
-dsn: username:passwd@tcp(42.120.16.222:3306)/hh_log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+dsn: username:passwd@tcp(127.0.0.1:3306)/hh_log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+
+
+使用例子：
+mdb := GetDB("./datastore.cfg", "master")
+rows, err := mdb.Query("SELECT * ...")
+// ...
 
