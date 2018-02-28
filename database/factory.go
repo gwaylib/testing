@@ -29,9 +29,19 @@ func getDB(etcFileName, sectionName string) (*DB, error) {
 	if err != nil {
 		return nil, errors.As(err, etcFileName)
 	}
-	drvName := cfg.Section(sectionName).Key("driver").String()
-	dsn := cfg.Section(sectionName).Key("dsn").String()
-	db, err = Open(drvName, dsn)
+	section, err := cfg.GetSection(sectionName)
+	if err != nil {
+		return nil, errors.As(err, sectionName)
+	}
+	drvName, err := section.GetKey("driver")
+	if err != nil {
+		return nil, errors.As(err, "not found 'driver'")
+	}
+	dsn, err := section.GetKey("dsn")
+	if err != nil {
+		return nil, errors.As(err, "not found 'dsn'")
+	}
+	db, err = Open(drvName.String(), dsn.String())
 	if err != nil {
 		return nil, errors.As(err)
 	}
