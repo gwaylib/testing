@@ -1,7 +1,7 @@
 /*
 此包以工厂的模式提供数据库连接，以便优化数据库连接数
 */
-package db
+package database
 
 import (
 	"database/sql"

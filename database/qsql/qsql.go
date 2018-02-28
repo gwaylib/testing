@@ -33,7 +33,7 @@ func (d *DBData) String() string {
 	return string(*d)
 }
 
-func newDBData(l int) []interface{} {
+func makeDBData(l int) []interface{} {
 	r := make([]interface{}, l)
 	for i := 0; i < l; i++ {
 		d := DBData("")
@@ -45,8 +45,6 @@ func newDBData(l int) []interface{} {
 type Template struct {
 	CountSql string // 读取数据总行数
 	DataSql  string // 读取数据细节
-	Offset   int    // 翻页偏移量
-	Limit    int    // 限制读取的数量
 }
 
 // 返回一个fmt.Sprintf()格式化Sql后的Template，

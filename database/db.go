@@ -2,7 +2,7 @@
 以工厂的模式构建数据库，以避免数据库被多次打开。
 因database/sql本身已实现连接池，因此没有必要创建多个同一的数据库连接实例
 */
-package db
+package database
 
 import (
 	"database/sql"
