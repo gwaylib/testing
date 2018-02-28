@@ -11,8 +11,96 @@ driver: mysql
 dsn: username:passwd@tcp(127.0.0.1:3306)/hh_log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
 
 
-使用例子：
+# 使用例子：
+
+## 标准库使用, 性能级别建议使用标准库以便可灵活运用
+import <database driver package>
+
 mdb := GetDB("./datastore.cfg", "master")
 rows, err := mdb.Query("SELECT * ...")
+// ...
+
+## 快速查询, 用于通用性的查询，例如js页面返回
+### 单个查询
+import <database driver package>
+
+mdb := GetDB("./datastore.cfg", "master")
+result, err := mdb.QueryOne("SELECT * FROM a WHERE id = ?", id)
+// ...
+// 或者
+result, err := mdb.QueryData("SELECT * FROM a WHERE id = ?", id)
+// .. 
+
+### 计数查询
+import <database driver package>
+
+mdb := GetDB("./datastore.cfg", "master")
+total, err := mdb.QueryCount("SELECT count(*) FROM a WHERE id = ?", id)
+// ...
+
+
+### 批量查询
+import <database driver package>
+
+mdb := GetDB("./datastore.cfg", "master")
+
+var (
+	userInfoQsql = &qsql.Template{
+		CountSql: `
+SELECT 
+    count(1) 
+FROM 
+    %s
+WHERE
+    mobile = ?
+`,
+		DataSql: `
+SELECT 
+    mobile "手机号"
+FROM 
+    %s
+WHERE
+    mobile = ?
+ORDER BY
+    mobile
+LIMIT ?, ? -- 须带有这两个参数
+`,
+	}
+)
+
+// 表格方式查询
+total, titles, result, err := mdb.QueryList(
+	userInfoQsql.FmtTempate("user_info_200601"),
+    currPage*10, 10, 
+	"13800130000")
+if err != nil {
+	if !errors.ErrNoData.Equal(err) {
+		log.Debug(errors.As(err, mobile, pid, uid))
+		return c.String(500, "系统错误")
+	}
+	// 空数据
+}
+
+
+// 或者对像方式查询
+total, titles, result, err := mdb.QueryMap(
+	userInfoQsql.FmtTempate("user_info_200601"),
+    currPage*10, 10, 
+	"13800130000")
+if err != nil {
+	if !errors.ErrNoData.Equal(err) {
+		log.Debug(errors.As(err, mobile, pid, uid))
+		return c.String(500, "系统错误")
+	}
+	// 无数据 
+}
+
+## ORM查询, 建议用于只读场景
+// 参考gorp ORM框架
+// https://github.com/go-gorp/gorp
+
+import <database driver package>
+
+orm := GetDB("./datastore.cfg", "master").GORP()
 // ...
 

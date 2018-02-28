@@ -6,47 +6,21 @@ package database
 import (
 	"database/sql"
 	"io"
-	"sync"
 
-	"github.com/gwaylib/datastore/conf/etc"
 	"github.com/gwaylib/errors"
 	"github.com/gwaylib/log"
 )
 
-var (
-	cacheLock = sync.Mutex{}
-	cache     = map[string]*DB{}
-)
-
-func getDB(etcFileName, sectionName string) (*DB, error) {
-	cacheLock.Lock()
-	defer cacheLock.Unlock()
-
-	key := etcFileName + sectionName
-
-	// get from cache
-	db, ok := cache[key]
-	if ok {
-		return db, nil
-	}
-
-	// create a new
-	cfg, err := etc.GetEtc(etcFileName)
+// 返回一个全新的实例
+func Open(drvName, dsn string) (*DB, error) {
+	db, err := sql.Open(drvName, dsn)
 	if err != nil {
-		return nil, errors.As(err, etcFileName)
+		return nil, errors.As(err, drvName, dsn)
 	}
-	drvName := cfg.Section(sectionName).Key("driver").String()
-	dsn := cfg.Section(sectionName).Key("dsn").String()
-	odb, err := sql.Open(drvName, dsn)
-	if err != nil {
-		return nil, errors.As(err)
-	}
-	db = &DB{DB: odb, isClose: false}
-	cache[key] = db
-	return db, nil
+	return &DB{DB: db, driverName: drvName}, nil
 }
 
-// 获取数据数连接实例
+// 获取数据库池中的实例
 func GetDB(etcFileName, sectionName string) *DB {
 	db, err := getDB(etcFileName, sectionName)
 	if err != nil {

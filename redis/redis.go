@@ -117,6 +117,7 @@ func (s *RediStore) ping() (bool, error) {
 }
 
 // save stores the session in redis.
+// 以json方式存储
 // age -- seconds, 0永久性存储
 func (s *RediStore) Set(key string, val interface{}, age int64) error {
 	b, err := json.Marshal(val)
