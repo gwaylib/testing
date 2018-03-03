@@ -21,8 +21,8 @@ func Open(drvName, dsn string) (*DB, error) {
 }
 
 // 使用一个已有的标准数据库实例构建出实例
-func NewDB(drvName string, db *sql.DB) (*DB, error) {
-	return &DB{DB: db, driverName: drvName}, nil
+func NewDB(drvName string, db *sql.DB) *DB {
+	return &DB{DB: db, driverName: drvName}
 }
 
 // 注册一个池实例
