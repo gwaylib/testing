@@ -1,4 +1,4 @@
-package etc
+package ini
 
 import (
 	"strings"
@@ -10,7 +10,7 @@ import (
 
 var cache = sync.Map{}
 
-func GetEtc(fileName string) (*ini.File, error) {
+func GetFile(fileName string) (*ini.File, error) {
 	f, ok := cache.Load(fileName)
 	if ok {
 		return f.(*ini.File), nil
@@ -28,33 +28,33 @@ func GetEtc(fileName string) (*ini.File, error) {
 
 // 用于省略前缀长路径写法
 // 例如,以下可用于多语言处理：
-// etc := NewEtc(etc.RootDir()+"/app.default)
+// ini := NewIni(ini.RootDir()+"/app.default)
 // lang := ".zh_cn"
-// cfg := etc.Get(lang)
+// cfg := ini.Get(lang)
 // cfg.Section("msg").Key("1001").String()
-type Etc struct {
+type Ini struct {
 	rootPath string
 }
 
-func NewEtc(rootPath string) *Etc {
-	return &Etc{rootPath}
+func NewIni(rootPath string) *Ini {
+	return &Ini{rootPath}
 }
 
-func (etc *Etc) Get(fileName string) *ini.File {
-	f, err := GetEtc(etc.rootPath + fileName)
+func (ini *Ini) Get(fileName string) *ini.File {
+	f, err := GetFile(ini.rootPath + fileName)
 	if err != nil {
 		panic(err)
 	}
 	return f
 }
 
-func (etc *Etc) GetDefault(fileName, defFileName string) *ini.File {
-	f, err := GetEtc(etc.rootPath + fileName)
+func (ini *Ini) GetDefault(fileName, defFileName string) *ini.File {
+	f, err := GetFile(ini.rootPath + fileName)
 	if err != nil {
 		if !errors.ErrNoData.Equal(err) {
 			panic(err)
 		}
-		return etc.Get(defFileName)
+		return ini.Get(defFileName)
 	}
 	return f
 }

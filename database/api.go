@@ -20,9 +20,20 @@ func Open(drvName, dsn string) (*DB, error) {
 	return &DB{DB: db, driverName: drvName}, nil
 }
 
+// 使用一个已有的标准数据库实例构建出实例
+func NewDB(drvName string, db *sql.DB) (*DB, error) {
+	return &DB{DB: db, driverName: drvName}, nil
+}
+
+// 注册一个池实例
+func RegCache(iniFileName, sectionName string, db *DB) {
+	regCache(iniFileName, sectionName, db)
+}
+
 // 获取数据库池中的实例
-func GetDB(etcFileName, sectionName string) *DB {
-	db, err := getDB(etcFileName, sectionName)
+// 如果不存在，会使用配置文件进行读取
+func CacheDB(iniFileName, sectionName string) *DB {
+	db, err := cacheDB(iniFileName, sectionName)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +42,7 @@ func GetDB(etcFileName, sectionName string) *DB {
 
 // 检查数据库是否存在并返回数据连接实例
 func HasDB(etcFileName, sectionName string) (*DB, error) {
-	return getDB(etcFileName, sectionName)
+	return cacheDB(etcFileName, sectionName)
 }
 
 // 提供此懒的关闭方法，调用者不需要处理错误

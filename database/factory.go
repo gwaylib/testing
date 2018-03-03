@@ -3,7 +3,7 @@ package database
 import (
 	"sync"
 
-	"github.com/gwaylib/datastore/conf/etc"
+	"github.com/gwaylib/datastore/conf/ini"
 	"github.com/gwaylib/errors"
 )
 
@@ -12,11 +12,18 @@ var (
 	cache     = map[string]*DB{}
 )
 
-func getDB(etcFileName, sectionName string) (*DB, error) {
+func regCache(iniFileName, sectionName string, db *DB) {
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+	key := iniFileName + sectionName
+	cache[key] = db
+}
+
+func cacheDB(iniFileName, sectionName string) (*DB, error) {
 	cacheLock.Lock()
 	defer cacheLock.Unlock()
 
-	key := etcFileName + sectionName
+	key := iniFileName + sectionName
 
 	// get from cache
 	db, ok := cache[key]
@@ -25,9 +32,9 @@ func getDB(etcFileName, sectionName string) (*DB, error) {
 	}
 
 	// create a new
-	cfg, err := etc.GetEtc(etcFileName)
+	cfg, err := ini.GetFile(iniFileName)
 	if err != nil {
-		return nil, errors.As(err, etcFileName)
+		return nil, errors.As(err, iniFileName)
 	}
 	section, err := cfg.GetSection(sectionName)
 	if err != nil {
