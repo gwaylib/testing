@@ -3,12 +3,12 @@
 [master]
 # 主库
 driver: mysql
-dsn: username:passwd@tcp(127.0.0.1:3306)/hh_center?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+dsn: username:passwd@tcp(127.0.0.1:3306)/center?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
 
 # 日志库
 [log]
 driver: mysql
-dsn: username:passwd@tcp(127.0.0.1:3306)/hh_log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
+dsn: username:passwd@tcp(127.0.0.1:3306)/log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
 
 
 # 使用例子：
@@ -16,7 +16,7 @@ dsn: username:passwd@tcp(127.0.0.1:3306)/hh_log?timeout=30s&strict=true&loc=Loca
 ## 标准库使用, 性能级别建议使用标准库以便可灵活运用
 import <database driver package>
 
-mdb := GetDB("./datastore.cfg", "master")
+mdb := CacheDB("./datastore.cfg", "master")
 rows, err := mdb.Query("SELECT * ...")
 // ...
 
@@ -24,7 +24,7 @@ rows, err := mdb.Query("SELECT * ...")
 ### 单个查询
 import <database driver package>
 
-mdb := GetDB("./datastore.cfg", "master")
+mdb := CacheDB("./datastore.cfg", "master")
 result, err := mdb.QueryOne("SELECT * FROM a WHERE id = ?", id)
 // ...
 // 或者
@@ -34,7 +34,7 @@ result, err := mdb.QueryData("SELECT * FROM a WHERE id = ?", id)
 ### 计数查询
 import <database driver package>
 
-mdb := GetDB("./datastore.cfg", "master")
+mdb := CacheDB("./datastore.cfg", "master")
 total, err := mdb.QueryCount("SELECT count(*) FROM a WHERE id = ?", id)
 // ...
 
@@ -42,7 +42,7 @@ total, err := mdb.QueryCount("SELECT count(*) FROM a WHERE id = ?", id)
 ### 批量查询
 import <database driver package>
 
-mdb := GetDB("./datastore.cfg", "master")
+mdb := CacheDB("./datastore.cfg", "master")
 
 var (
 	userInfoQsql = &qsql.Template{
@@ -101,6 +101,6 @@ if err != nil {
 
 import <database driver package>
 
-orm := GetDB("./datastore.cfg", "master").GORP()
+orm := CacheDB("./datastore.cfg", "master").GORP()
 // ...
 
