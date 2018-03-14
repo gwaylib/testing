@@ -9,12 +9,11 @@ import (
 
 	"github.com/gwaylib/errors"
 	"github.com/gwaylib/log"
-	"github.com/jmoiron/sqlx"
 )
 
 // 使用一个已有的标准数据库实例构建出实例
 func NewDB(drvName string, db *sql.DB) *DB {
-	return &DB{DB: db, driverName: drvName, xdb: sqlx.NewDb(db, drvName)}
+	return newDB(drvName, db)
 }
 
 // 返回一个全新的实例
@@ -23,7 +22,7 @@ func Open(drvName, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, errors.As(err, drvName, dsn)
 	}
-	return NewDB(drvName, db), nil
+	return newDB(drvName, db), nil
 }
 
 // 注册一个池实例

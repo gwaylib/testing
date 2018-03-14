@@ -25,19 +25,15 @@ rows, err := mdb.Query("SELECT * ...")
 import <database driver package>
 
 mdb := CacheDB("./datastore.cfg", "master")
-result, err := mdb.QueryOne("SELECT * FROM a WHERE id = ?", id)
-// ...
-// 或者
-result, err := mdb.QueryData("SELECT * FROM a WHERE id = ?", id)
+result, err := QueryData(mdb, "SELECT * FROM a WHERE id = ?", id)
 // .. 
 
 ### 计数查询
 import <database driver package>
 
 mdb := CacheDB("./datastore.cfg", "master")
-total, err := mdb.QueryCount("SELECT count(*) FROM a WHERE id = ?", id)
+total, err := QueryInt(mdb, "SELECT count(*) FROM a WHERE id = ?", id)
 // ...
-
 
 ### 批量查询
 import <database driver package>
@@ -69,10 +65,10 @@ LIMIT ?, ? -- 须带有这两个参数
 )
 
 // 表格方式查询
-total, titles, result, err := mdb.QueryList(
-	userInfoQsql.FmtTempate("user_info_200601"),
-    currPage*10, 10, 
-	"13800130000")
+titles, result, err := QueryTable(
+    mdb,
+	userInfoQsql.FmtTempate("user_info_200601").DataSql,
+	"13800130000", currPage*10, 10)
 if err != nil {
 	if !errors.ErrNoData.Equal(err) {
 		log.Debug(errors.As(err, mobile, pid, uid))
@@ -83,10 +79,10 @@ if err != nil {
 
 
 // 或者对像方式查询
-total, titles, result, err := mdb.QueryMap(
-	userInfoQsql.FmtTempate("user_info_200601"),
-    currPage*10, 10, 
-	"13800130000")
+titles, result, err := mdb.QueryMap(
+	userInfoQsql.FmtTempate("user_info_200601").DataSql,
+	"13800130000",
+    currPage*10, 10) 
 if err != nil {
 	if !errors.ErrNoData.Equal(err) {
 		log.Debug(errors.As(err, mobile, pid, uid))
@@ -94,13 +90,4 @@ if err != nil {
 	}
 	// 无数据 
 }
-
-## ORM查询, 建议用于只读场景
-// 参考gorp ORM框架
-// https://github.com/go-gorp/gorp
-
-import <database driver package>
-
-orm := CacheDB("./datastore.cfg", "master").GORP()
-// ...
 
