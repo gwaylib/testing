@@ -151,7 +151,7 @@ WHERE
     mobile = ?
 ORDER BY
     mobile
-LIMIT ?, ? -- 须带有这两个参数
+LIMIT ?, ?
 `,
 	}
 )
