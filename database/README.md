@@ -8,9 +8,9 @@
 
     database/sql
 
-sqlx ORM框架
+sqlx框架
 
-    https://github.com/go-gorp/gorp
+    https://github.com/jmoiron/sqlx
 
 仅实现新增与查询功能
 
