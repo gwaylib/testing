@@ -2,15 +2,20 @@
 
 因项目需要集成了些库，以便可以方便使用
 
-资料参考了:
+参考资料
+
 标准库
+
     database/sql
+
 sqlx ORM框架
+
     https://github.com/go-gorp/gorp
 
 仅实现新增与查询功能
 
 未实现UPDATE方法的原因是个人认为标准库很适合使用了，且更新时需要注意性能问题;
+
 未实现其他功能比如创建表等是个人认为专业的数据库工具更适用于这方面的操作与实现。
 
 # 使用例子：
@@ -33,18 +38,24 @@ dsn: username:passwd@tcp(127.0.0.1:3306)/log?timeout=30s&strict=true&loc=Local&p
 
 
 
-## 标准库使用, 性能级别建议使用标准库以便可灵活运用
+## 性能级别建议使用标准库以便可灵活运用
 ``` text
 import <database driver package>
 import "github.com/gwaylib/datastore/database"
 ```
 
-### 标准查询
+### 使用标准查询
 ``` text
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>
-rows, err := mdb.Query("SELECT * ...")
+row := database.QueryRow(mdb, "SELECT * ...")
+// ...
+
+rows, err := database.Query(mdb, "SELECT * ...")
+// ...
+
+result, err := database.Exec(mdb, "UPDATE ...")
 // ...
 ```
 
@@ -71,13 +82,13 @@ var u = &User{
 // 新增例子一：
 // 在需要时设置默认驱动名
 # database.DEFAULT_DRV_NAME = database.DRV_NAME_MYSQL
-if _, err := database.insertstruct(mdb, u, "testing"); err != nil{
+if _, err := database.InsertStruct(mdb, u, "testing"); err != nil{
     // ... 
 }
 // ...
 
 // 新增例子二：
-if _, err := database.insertstruct(mdb, u, "testing", "mysql"); err != nil{
+if _, err := database.InsertStruct(mdb, u, "testing", "mysql"); err != nil{
     // ... 
 }
 // ...

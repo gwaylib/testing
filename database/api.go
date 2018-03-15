@@ -90,6 +90,21 @@ func ScanStruct(rows Scaner, obj interface{}) error {
 	return scanStruct(rows, obj)
 }
 
+// 实现db.Exec接口
+func Exec(db Execer, querySql string, args ...interface{}) (sql.Result, error) {
+	return db.Exec(querySql, args...)
+}
+
+// 实现db.Query查询
+func Query(db Queryer, querySql string, args ...interface{}) (*sql.Rows, error) {
+	return db.Query(querySql, args...)
+}
+
+// 实现db.QueryRow查询
+func QueryRow(db Queryer, querySql string, args ...interface{}) *sql.Row {
+	return db.QueryRow(querySql, args...)
+}
+
 // 查询一个对象
 func QueryObj(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	return queryObj(db, obj, querySql, args...)
