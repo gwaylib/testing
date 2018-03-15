@@ -161,28 +161,28 @@ LIMIT ?, ? -- 须带有这两个参数
 // 表格方式查询
 result, err := database.QueryTable(
     mdb,
-	userInfoQsql.FmtTempate("user_info_200601").DataSql,
-	"13800130000", currPage*10, 10)
+    userInfoQsql.FmtTempate("user_info_200601").DataSql,
+    "13800130000", currPage*10, 10)
 if err != nil {
-	if !errors.ErrNoData.Equal(err) {
-		log.Debug(errors.As(err, mobile, pid, uid))
-		return c.String(500, "系统错误")
-	}
-	// 空数据
+    if !errors.ErrNoData.Equal(err) {
+        log.Debug(errors.As(err, mobile, pid, uid))
+        return c.String(500, "系统错误")
+    }
+    // 空数据
 }
 
 
 // 或者对象方式查询
 result, err := database.QueryMap(
     mdb,
-	userInfoQsql.FmtTempate("user_info_200601").DataSql,
-	"13800130000",
+    userInfoQsql.FmtTempate("user_info_200601").DataSql,
+    "13800130000",
     currPage*10, 10) 
 if err != nil {
-	if !errors.ErrNoData.Equal(err) {
-		log.Debug(errors.As(err, mobile, pid, uid))
-		return c.String(500, "系统错误")
-	}
-	// 无数据 
+    if !errors.ErrNoData.Equal(err) {
+        log.Debug(errors.As(err, mobile, pid, uid))
+        return c.String(500, "系统错误")
+    }
+    // 无数据 
 }
 ```
