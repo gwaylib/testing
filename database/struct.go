@@ -77,7 +77,7 @@ func reflectInsertStruct(i interface{}, drvName string) (string, string, []inter
 	v := reflect.ValueOf(i)
 	k := v.Kind()
 	switch k {
-	case reflect.Struct, reflect.Ptr:
+	case reflect.Ptr:
 	default:
 		return "", "", nil, errors.New("Unsupport reflect type").As(k.String())
 	}

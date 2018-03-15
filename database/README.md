@@ -40,6 +40,7 @@ dsn: username:passwd@tcp(127.0.0.1:3306)/log?timeout=30s&strict=true&loc=Local&p
 
 ## 性能级别建议使用标准库以便可灵活运用
 ``` text
+// 导入驱动库
 import <database driver package>
 import "github.com/gwaylib/datastore/database"
 ```
@@ -110,7 +111,7 @@ mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>
 var u = &User{}
-result, err := database.QueryObj(mdb, u, "SELECT * FROM a WHERE id = ?", id)
+result, err := database.QueryStruct(mdb, u, "SELECT * FROM a WHERE id = ?", id)
 // .. 
 ```
 

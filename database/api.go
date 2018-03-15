@@ -105,9 +105,9 @@ func QueryRow(db Queryer, querySql string, args ...interface{}) *sql.Row {
 	return db.QueryRow(querySql, args...)
 }
 
-// 查询一个对象
-func QueryObj(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
-	return queryObj(db, obj, querySql, args...)
+// 查询一个结构体对象, 可以是结构体数组
+func QueryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+	return queryStruct(db, obj, querySql, args...)
 }
 
 // 执行一个通用的数字查询

@@ -64,7 +64,7 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	if err != nil {
 		return nil, errors.As(err)
 	}
-	incr, ok := obj.(AutoIncrAble)
+	incr, ok := obj.(AutoIncrAble) // need obj is ptr kind.
 	if ok {
 		incr.SetLastInsertId(result.LastInsertId())
 	}
@@ -81,7 +81,7 @@ func scanStruct(rows Scaner, obj interface{}) error {
 }
 
 // 查询一个对象
-func queryObj(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+func queryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	rows, err := db.Query(querySql, args...)
 	if err != nil {
 		return errors.As(err, querySql, args)
