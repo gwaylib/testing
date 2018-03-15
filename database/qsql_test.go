@@ -2,32 +2,27 @@ package database
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
-
-	"github.com/gwaylib/log"
-	"github.com/jmoiron/sqlx/reflectx"
 )
 
 func TestReflect(t *testing.T) {
 	s := struct {
 		A int `db:"a"`
 		B int
+		C string
 	}{
-		A: 1,
-		B: 2,
+		A: 100,
+		B: 200,
+		C: "testing",
 	}
 
-	m := reflectx.NewMapper("db")
-	fields := m.TypeMap(reflect.TypeOf(s))
-	log.Debug(*fields.Tree)
-	for i, val := range fields.Index {
-		fmt.Printf("index:%d,%v\n", i, *val)
+	names, inputs, vals, err := reflectInsertStruct(&s, "mysql")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for key, val := range fields.Paths {
-		fmt.Printf("path:%s,%v\n", key, *val)
-	}
-	for key, val := range fields.Names {
-		fmt.Printf("name:%s,%v\n", key, val.Zero)
-	}
+	fmt.Printf("%+v\n", names)
+	fmt.Printf("%+v\n", inputs)
+	fmt.Printf("%+v\n", vals)
 }
+
+// TODO: api testing
