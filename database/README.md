@@ -36,8 +36,6 @@ driver: mysql
 dsn: username:passwd@tcp(127.0.0.1:3306)/log?timeout=30s&strict=true&loc=Local&parseTime=true&allowOldPasswords=1
 ```
 
-
-
 ## 性能级别建议使用标准库以便可灵活运用
 ``` text
 // 导入驱动库
@@ -82,7 +80,7 @@ var u = &User{
 
 // 新增例子一：
 // 在需要时设置默认驱动名
-# database.DEFAULT_DRV_NAME = database.DRV_NAME_MYSQL
+// database.DEFAULT_DRV_NAME = database.DRV_NAME_MYSQL
 if _, err := database.InsertStruct(mdb, u, "testing"); err != nil{
     // ... 
 }
