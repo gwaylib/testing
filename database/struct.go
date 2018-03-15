@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,32 +9,6 @@ import (
 	"github.com/gwaylib/errors"
 	"github.com/jmoiron/sqlx/reflectx"
 )
-
-// 自增回调接口
-type AutoIncrAble interface {
-	// notify for last id
-	SetLastInsertId(id int64, err error)
-}
-
-// 执行器
-type Execer interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-}
-
-// 查询器
-type Queryer interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-}
-
-// 扫描器
-type Scaner interface {
-	Close() error
-	Columns() ([]string, error)
-	Err() error
-	Next() bool
-	Scan(...interface{}) error
-}
 
 // 通用的字符串查询
 type DBData string
