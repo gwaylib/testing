@@ -171,7 +171,6 @@ if err != nil {
     // 空数据
 }
 
-
 // 或者对象方式查询
 result, err := database.QueryMap(
     mdb,
