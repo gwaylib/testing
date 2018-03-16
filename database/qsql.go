@@ -51,7 +51,7 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	drvNamesLen := len(drvNames)
 	if drvNamesLen > 0 {
 		if drvNamesLen != 0 {
-			panic(errors.New("'drvNames' Expect only one argument").As(drvNames))
+			panic(errors.New("'drvNames' expect only one argument").As(drvNames))
 		}
 		drvName = drvNames[0]
 	}

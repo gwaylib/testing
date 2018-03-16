@@ -71,7 +71,18 @@ func (t Template) FmtTemplate(args ...interface{}) *Template {
 	}
 }
 
-var refxM = reflectx.NewMapper("db")
+var refxM = reflectx.NewMapperTagFunc("db", func(in string) string {
+	// for tag name
+	return in
+}, func(in string) string {
+	// for options
+	trims := []string{}
+	options := strings.Split(in, ",")
+	for _, op := range options {
+		trims = append(trims, strings.TrimSpace(op))
+	}
+	return strings.Join(trims, ",")
+})
 
 func reflectInsertStruct(i interface{}, drvName string) (string, string, []interface{}, error) {
 	v := reflect.ValueOf(i)
@@ -89,6 +100,11 @@ func reflectInsertStruct(i interface{}, drvName string) (string, string, []inter
 	inputs := []byte{}
 	vals := []interface{}{}
 	for i, val := range tm.Index {
+		_, ok := val.Options["autoincrement"]
+		if ok {
+			// ignore 'autoincrement' for insert data
+			continue
+		}
 		names = append(names, []byte(val.Name)...)
 		names = append(names, []byte(",")...)
 		vals = append(vals, v.Field(i).Interface())
