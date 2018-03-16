@@ -96,7 +96,7 @@ if _, err := database.InsertStruct(mdb, u, "testing", "mysql"); err != nil{
 ```
 
 ## 快速查询, 用于通用性的查询，例如js页面返回
-### 单个查询
+### 查询结果到结构体
 ``` text
 import <database driver package>
 import "github.com/gwaylib/datastore/database"
@@ -107,15 +107,45 @@ type User struct{
     Name string `db:"name"`
 }
 
+// 方法一
+
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>
-var u = &User{}
-result, err := database.QueryStruct(mdb, u, "SELECT * FROM a WHERE id = ?", id)
+var u = []*User{}
+result, err := database.QueryStructs(mdb, &u, "SELECT id, name FROM a WHERE id = ?", id)
+if err != nil{
+    // ...
+}
+if len(u) == 0{
+    // data not found
+    // ...
+}
 // .. 
+
+// 或者
+// 方法二
+
+mdb := database.CacheDB("./datastore.cfg", "master")
+// or mdb = <sql.Tx>
+// or mdb = <sql.Stmt>
+rows, err := database.Query(mdb, "SELECT id, name FROM a WHERE id = ?", id)
+if err != nil {
+    // ...
+}
+defer database.Close(rows)
+var u = []*User{}
+if err := database.ScanStructs(rows, &u); err != nil{
+    // ...
+}
+if len(u) == 0{
+    // data not found
+    // ...
+}
+
 ```
 
-### 计数查询
+### 查询结果到整型
 ```text
 import <database driver package>
 import "github.com/gwaylib/datastore/database"

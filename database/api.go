@@ -13,10 +13,10 @@ import (
 
 const (
 	DRV_NAME_MYSQL     = "msyql"
-	DRV_NAME_ORACLE    = "oracle" // or "oic8" is supported
+	DRV_NAME_ORACLE    = "oracle" // or "oci8"
 	DRV_NAME_POSTGRES  = "postgres"
 	DRV_NAME_SQLITE3   = "sqlite3"
-	DRV_NAME_SQLSERVER = "sqlserver" // or "mssql" is supported
+	DRV_NAME_SQLSERVER = "sqlserver" // or "mssql"
 )
 
 var (
@@ -77,19 +77,6 @@ func Rollback(tx *sql.Tx) {
 	}
 }
 
-// 添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
-// 关于drvNames的设计说明
-// 因支持一个可变参数, 或未填，将使用默认值:DEFAULT_DRV_NAME
-func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...string) (sql.Result, error) {
-	return insertStruct(exec, obj, tbName, drvNames...)
-}
-
-// 扫描结果到一个结构体，该结构体可以是数组
-// 代码设计请参阅github.com/jmoiron/sqlx
-func ScanStruct(rows Scaner, obj interface{}) error {
-	return scanStruct(rows, obj)
-}
-
 // 实现db.Exec接口
 func Exec(db Execer, querySql string, args ...interface{}) (sql.Result, error) {
 	return db.Exec(querySql, args...)
@@ -105,9 +92,24 @@ func QueryRow(db Queryer, querySql string, args ...interface{}) *sql.Row {
 	return db.QueryRow(querySql, args...)
 }
 
-// 查询一个结构体对象, 可以是结构体数组
-func QueryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
-	return queryStruct(db, obj, querySql, args...)
+// 添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
+// 关于drvNames的设计说明
+// 因支持一个可变参数, 或未填，将使用默认值:DEFAULT_DRV_NAME
+func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...string) (sql.Result, error) {
+	return insertStruct(exec, obj, tbName, drvNames...)
+}
+
+// 扫描结果至结构体数组
+// 如果没有数据，返回成功，不改变原数组的值
+// 代码设计请参阅github.com/jmoiron/sqlx
+func ScanStructs(rows Scaner, obj interface{}) error {
+	return scanStructs(rows, obj)
+}
+
+// 查询结果到结构体数组
+// 如果没有数据，返回成功，不改变原数组的值
+func QueryStructs(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+	return queryStructs(db, obj, querySql, args...)
 }
 
 // 执行一个通用的数字查询

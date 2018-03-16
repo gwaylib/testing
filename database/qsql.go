@@ -59,10 +59,10 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	if err != nil {
 		return nil, errors.As(err)
 	}
-	execSql := fmt.Sprintf(tbName, names, inputs)
+	execSql := fmt.Sprintf(addObjSql, tbName, names, inputs)
 	result, err := exec.Exec(execSql, vals...)
 	if err != nil {
-		return nil, errors.As(err)
+		return nil, errors.As(err, execSql)
 	}
 	incr, ok := obj.(AutoIncrAble) // need obj is ptr kind.
 	if ok {
@@ -71,24 +71,21 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	return result, nil
 }
 
-// 扫描结果到一个结构体，该结构体可以是数组
-// 代码设计请参阅github.com/jmoiron/sqlx
-func scanStruct(rows Scaner, obj interface{}) error {
+func scanStructs(rows Scaner, obj interface{}) error {
 	if err := sqlx.StructScan(rows, obj); err != nil {
 		return errors.As(err)
 	}
 	return nil
 }
 
-// 查询一个对象
-func queryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+func queryStructs(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	rows, err := db.Query(querySql, args...)
 	if err != nil {
 		return errors.As(err, querySql, args)
 	}
 	defer Close(rows)
 
-	if err := scanStruct(rows, obj); err != nil {
+	if err := scanStructs(rows, obj); err != nil {
 		return errors.As(err, querySql, args)
 	}
 
