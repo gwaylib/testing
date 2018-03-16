@@ -3,9 +3,10 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 
 	"github.com/gwaylib/errors"
-	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 )
 
 // 自增回调接口
@@ -71,10 +72,70 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	return result, nil
 }
 
+// fieldsByName fills a values interface with fields from the passed value based
+// on the traversals in int.  If ptrs is true, return addresses instead of values.
+// We write this instead of using FieldsByName to save allocations and map lookups
+// when iterating over many rows.  Empty traversals will get an interface pointer.
+// Because of the necessity of requesting ptrs or values, it's considered a bit too
+// specialized for inclusion in reflectx itself.
+func fieldsByTraversal(v reflect.Value, traversals [][]int, values []interface{}, ptrs bool) error {
+	for i, traversal := range traversals {
+		if len(traversal) == 0 {
+			values[i] = new(interface{})
+			continue
+		}
+		f := reflectx.FieldByIndexes(v, traversal)
+		if ptrs {
+			values[i] = f.Addr().Interface()
+		} else {
+			values[i] = f.Interface()
+		}
+	}
+	return nil
+}
 func scanStructs(rows Scaner, obj interface{}) error {
-	if err := sqlx.StructScan(rows, obj); err != nil {
+	if obj == nil {
+		return errors.New("nil pointer passed to StructScan destination")
+	}
+
+	value := reflect.ValueOf(obj)
+	if value.Kind() != reflect.Ptr {
+		return errors.New("must pass a pointer, not a value, to StructScan destination")
+	}
+
+	slice := reflectx.Deref(value.Type())
+	if slice.Kind() != reflect.Slice {
+		return errors.As(fmt.Errorf("expected slice but got %s", value.Kind()))
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
 		return errors.As(err)
 	}
+
+	base := reflectx.Deref(slice.Elem())
+	fields := refxM.TraversalsByName(base, columns)
+	direct := reflect.Indirect(value)
+	isPtr := slice.Elem().Kind() == reflect.Ptr
+	values := make([]interface{}, len(columns))
+	var v, vp reflect.Value
+	for rows.Next() {
+		vp = reflect.New(base)
+		v = reflect.Indirect(vp)
+		if err := fieldsByTraversal(v, fields, values, true); err != nil {
+			return errors.As(err)
+		}
+
+		if err := rows.Scan(values...); err != nil {
+			return errors.As(err)
+		}
+		if isPtr {
+			direct.Set(reflect.Append(direct, vp))
+		} else {
+			direct.Set(reflect.Append(direct, v))
+		}
+	}
+
 	return nil
 }
 
