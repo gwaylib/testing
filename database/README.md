@@ -108,13 +108,33 @@ type User struct{
 }
 
 // 方法一
+mdb := database.CacheDB("./datastore.cfg", "master")
+// or mdb = <sql.Tx>
+// or mdb = <sql.Stmt>
+var u = *User{}
+if err := database.QueryStruct(mdb, u, "SELECT id, name FROM a WHERE id = ?", id)
+if err != nil{
+    // ...
+}
+// ..
 
+// 或者
+// 方法二
+mdb := database.CacheDB("./datastore.cfg", "master")
+// or mdb = <sql.Tx>
+// or mdb = <sql.Stmt>
+var u = *User{}
+if err := database.ScanStruct(database.QueryRow(mdb, "SELECT id, name FROM a WHERE id = ?", id), u); err != nil {
+    // ...
+}
+
+// 或者
+// 方法三
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>
 var u = []*User{}
-result, err := database.QueryStructs(mdb, &u, "SELECT id, name FROM a WHERE id = ?", id)
-if err != nil{
+if err := database.QueryStructs(mdb, &u, "SELECT id, name FROM a WHERE id = ?", id); err != nil {
     // ...
 }
 if len(u) == 0{
@@ -124,8 +144,7 @@ if len(u) == 0{
 // .. 
 
 // 或者
-// 方法二
-
+// 方法四
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>

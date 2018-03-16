@@ -93,6 +93,46 @@ func fieldsByTraversal(v reflect.Value, traversals [][]int, values []interface{}
 	}
 	return nil
 }
+
+func scanStruct(rows Scaner, obj interface{}) error {
+	if obj == nil {
+		return errors.New("nil pointer passed to StructScan destination")
+	}
+
+	value := reflect.ValueOf(obj)
+	if value.Kind() != reflect.Ptr {
+		return errors.New("must pass a pointer, not a value, to StructScan destination")
+	}
+
+	base := reflectx.Deref(value.Type())
+	if base.Kind() != reflect.Struct {
+		return errors.As(fmt.Errorf("expected struct pointer but got %s", value.Kind()))
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return errors.As(err)
+	}
+
+	fields := refxM.TraversalsByName(base, columns)
+	values := make([]interface{}, len(columns))
+
+	direct := reflect.Indirect(value)
+
+	vp := reflect.New(base)
+	v := reflect.Indirect(vp)
+	if err := fieldsByTraversal(v, fields, values, true); err != nil {
+		return errors.As(err)
+	}
+	if !rows.Next() {
+		return errors.ErrNoData
+	}
+	if err := rows.Scan(values...); err != nil {
+		return errors.As(err)
+	}
+	direct.Set(v)
+	return nil
+}
 func scanStructs(rows Scaner, obj interface{}) error {
 	if obj == nil {
 		return errors.New("nil pointer passed to StructScan destination")
@@ -139,15 +179,28 @@ func scanStructs(rows Scaner, obj interface{}) error {
 	return nil
 }
 
+func queryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+	rows, err := db.Query(querySql, args...)
+	if err != nil {
+		return errors.As(err, args)
+	}
+	defer Close(rows)
+
+	if err := scanStruct(rows, obj); err != nil {
+		return errors.As(err, args)
+	}
+	return nil
+}
+
 func queryStructs(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	rows, err := db.Query(querySql, args...)
 	if err != nil {
-		return errors.As(err, querySql, args)
+		return errors.As(err, args)
 	}
 	defer Close(rows)
 
 	if err := scanStructs(rows, obj); err != nil {
-		return errors.As(err, querySql, args)
+		return errors.As(err, args)
 	}
 
 	return nil
@@ -160,7 +213,7 @@ func queryInt(db Queryer, querySql string, args ...interface{}) (int64, error) {
 	}
 	num := sql.NullInt64{}
 	if err := db.QueryRow(querySql, args...).Scan(&num); err != nil {
-		return 0, errors.As(err, querySql, args)
+		return 0, errors.As(err, args)
 	}
 	return num.Int64, nil
 }
@@ -172,7 +225,7 @@ func queryStr(db Queryer, querySql string, args ...interface{}) (string, error) 
 	}
 	str := DBData("")
 	if err := db.QueryRow(querySql, args...).Scan(&str); err != nil {
-		return "", errors.As(err, querySql, args)
+		return "", errors.As(err, args)
 	}
 	return str.String(), nil
 }
@@ -185,19 +238,19 @@ func queryTable(db Queryer, querySql string, args ...interface{}) (titles []stri
 	result = [][]interface{}{}
 	rows, err := db.Query(querySql, args...)
 	if err != nil {
-		return titles, result, errors.As(err, querySql, args)
+		return titles, result, errors.As(err, args)
 	}
 	defer rows.Close()
 
 	titles, err = rows.Columns()
 	if err != nil {
-		return titles, result, errors.As(err, querySql, args)
+		return titles, result, errors.As(err, args)
 	}
 
 	for rows.Next() {
 		r := makeDBData(len(titles))
 		if err := rows.Scan(r...); err != nil {
-			return titles, result, errors.As(err, querySql, args)
+			return titles, result, errors.As(err, args)
 		}
 		result = append(result, r)
 	}
@@ -214,14 +267,14 @@ func queryTable(db Queryer, querySql string, args ...interface{}) (titles []stri
 func queryMap(db Queryer, querySql string, args ...interface{}) ([]map[string]interface{}, error) {
 	rows, err := db.Query(querySql, args...)
 	if err != nil {
-		return []map[string]interface{}{}, errors.As(err, querySql, args)
+		return []map[string]interface{}{}, errors.As(err, args)
 	}
 	defer rows.Close()
 
 	// 列名
 	names, err := rows.Columns()
 	if err != nil {
-		return []map[string]interface{}{}, errors.As(err, querySql, args)
+		return []map[string]interface{}{}, errors.As(err, args)
 	}
 
 	// 取一条数据
@@ -229,14 +282,14 @@ func queryMap(db Queryer, querySql string, args ...interface{}) ([]map[string]in
 	for rows.Next() {
 		r := makeDBData(len(names))
 		if err := rows.Scan(r...); err != nil {
-			return []map[string]interface{}{}, errors.As(err, querySql, args)
+			return []map[string]interface{}{}, errors.As(err, args)
 		}
 		result := map[string]interface{}{}
 		for i, name := range names {
 			// 校验列名重复性
 			_, ok := result[name]
 			if ok {
-				return []map[string]interface{}{}, errors.New("Already exist column name").As(querySql, name)
+				return []map[string]interface{}{}, errors.New("Already exist column name").As(name)
 			}
 			result[name] = r[i]
 		}

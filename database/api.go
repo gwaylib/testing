@@ -99,11 +99,23 @@ func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 	return insertStruct(exec, obj, tbName, drvNames...)
 }
 
+// 扫描结果至结构体
+// 如果没有数据，errors.ErrNoData
+func ScanStruct(rows Scaner, obj interface{}) error {
+	return scanStruct(rows, obj)
+}
+
 // 扫描结果至结构体数组
 // 如果没有数据，返回成功，不改变原数组的值
 // 代码设计请参阅github.com/jmoiron/sqlx
 func ScanStructs(rows Scaner, obj interface{}) error {
 	return scanStructs(rows, obj)
+}
+
+// 查询结果到结构体
+// 如果没有数据，返回errors.ErrNoData
+func QueryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
+	return queryStruct(db, obj, querySql, args...)
 }
 
 // 查询结果到结构体数组
