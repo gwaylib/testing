@@ -3,11 +3,11 @@ package test
 import (
 	"testing"
 
-	"github.com/gwaylib/datastore/conf/etc"
+	"github.com/gwaylib/datastore/conf/ini"
 )
 
 func TestEtc(t *testing.T) {
-	cfg, err := etc.GetEtc("./etc.cfg")
+	cfg, err := ini.GetFile("./etc.cfg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestEtc(t *testing.T) {
 
 func TestI18n(t *testing.T) {
 	i18nDir := "./app.default."
-	cfg := etc.NewEtc(i18nDir)
+	cfg := ini.NewIni(i18nDir)
 	//	msg_en := cfg.Get("en").Section("error").Key("0").String()
 	//	if msg_en != "zero" {
 	//		t.Fatal(msg_en)

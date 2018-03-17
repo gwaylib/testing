@@ -13,7 +13,7 @@ import (
 // ini := NewIni(ini.RootDir()+"/app.default)
 // lang := ".zh_cn"
 // cfg := ini.Get(lang)
-// cfg.Section("msg").Key("1001").String()
+// cfg.String("msg", "1001")
 type Ini struct {
 	rootPath string
 }
