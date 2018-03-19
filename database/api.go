@@ -101,14 +101,14 @@ func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 
 // 扫描结果至结构体
 // 如果没有数据，errors.ErrNoData
-func ScanStruct(rows Scaner, obj interface{}) error {
+func ScanStruct(rows Rows, obj interface{}) error {
 	return scanStruct(rows, obj)
 }
 
 // 扫描结果至结构体数组
 // 如果没有数据，返回成功，不改变原数组的值
 // 代码设计请参阅github.com/jmoiron/sqlx
-func ScanStructs(rows Scaner, obj interface{}) error {
+func ScanStructs(rows Rows, obj interface{}) error {
 	return scanStructs(rows, obj)
 }
 
@@ -124,14 +124,9 @@ func QueryStructs(db Queryer, obj interface{}, querySql string, args ...interfac
 	return queryStructs(db, obj, querySql, args...)
 }
 
-// 执行一个通用的数字查询
-func QueryInt(db Queryer, querySql string, args ...interface{}) (int64, error) {
-	return queryInt(db, querySql, args...)
-}
-
-// 执行一个通用的字符查询
-func QueryStr(db Queryer, querySql string, args ...interface{}) (string, error) {
-	return queryStr(db, querySql, args...)
+// 查询一个支持Scan的数据类型
+func QueryElem(db Queryer, result interface{}, querySql string, args ...interface{}) error {
+	return queryElem(db, result, querySql, args...)
 }
 
 // 执行一个通用的查询

@@ -27,7 +27,7 @@ type Queryer interface {
 }
 
 // 扫描器
-type Scaner interface {
+type Rows interface {
 	Close() error
 	Columns() ([]string, error)
 	Err() error
@@ -94,7 +94,7 @@ func fieldsByTraversal(v reflect.Value, traversals [][]int, values []interface{}
 	return nil
 }
 
-func scanStruct(rows Scaner, obj interface{}) error {
+func scanStruct(rows Rows, obj interface{}) error {
 	if obj == nil {
 		return errors.New("nil pointer passed to StructScan destination")
 	}
@@ -133,7 +133,7 @@ func scanStruct(rows Scaner, obj interface{}) error {
 	direct.Set(v)
 	return nil
 }
-func scanStructs(rows Scaner, obj interface{}) error {
+func scanStructs(rows Rows, obj interface{}) error {
 	if obj == nil {
 		return errors.New("nil pointer passed to StructScan destination")
 	}
@@ -206,28 +206,12 @@ func queryStructs(db Queryer, obj interface{}, querySql string, args ...interfac
 	return nil
 }
 
-// 执行一个通用的数字查询
-func queryInt(db Queryer, querySql string, args ...interface{}) (int64, error) {
-	if len(querySql) == 0 {
-		return 0, nil
+// 查询一个支持Scan的数据类型
+func queryElem(db Queryer, result interface{}, querySql string, args ...interface{}) error {
+	if err := db.QueryRow(querySql, args...).Scan(result); err != nil {
+		return errors.As(err, args)
 	}
-	num := sql.NullInt64{}
-	if err := db.QueryRow(querySql, args...).Scan(&num); err != nil {
-		return 0, errors.As(err, args)
-	}
-	return num.Int64, nil
-}
-
-// 执行一个通用的字符查询
-func queryStr(db Queryer, querySql string, args ...interface{}) (string, error) {
-	if len(querySql) == 0 {
-		return "", nil
-	}
-	str := DBData("")
-	if err := db.QueryRow(querySql, args...).Scan(&str); err != nil {
-		return "", errors.As(err, args)
-	}
-	return str.String(), nil
+	return nil
 }
 
 // 执行一个通用的查询
