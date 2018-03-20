@@ -95,6 +95,22 @@ if _, err := database.InsertStruct(mdb, u, "testing", "mysql"); err != nil{
 // ...
 ```
 
+### 批量操纵数据
+``` text
+mdb := database.CacheDB("./datastore.cfg", "master")
+multiTx := []*database.MultiTx{}
+multiTx = append(multiTx, database.NewMultiTx(
+    "UPDATE testing SET name = ? WHERE id = ?",
+    id,
+))
+multiTx = append(multiTx, database.NewMultiTx(
+    "UPDATE testing SET name = ? WHERE id = ?",
+    id,
+))
+if err := database.ExecMutlTx(mdb, multiTx); err != nil{
+    // ...
+}
+
 ## 快速查询, 用于通用性的查询，例如js页面返回
 ### 查询结果到结构体
 ``` text

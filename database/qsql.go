@@ -35,6 +35,20 @@ type Rows interface {
 	Scan(...interface{}) error
 }
 
+// 事件器
+type Begin interface {
+	Begin() (*sql.Tx, error)
+}
+
+type MultiTx struct {
+	Query string
+	Args  []interface{}
+}
+
+func NewMultiTx(query string, args ...interface{}) *MultiTx {
+	return &MultiTx{query, args}
+}
+
 const (
 	addObjSql = `
 INSERT INTO %s
@@ -70,6 +84,24 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 		incr.SetLastInsertId(result.LastInsertId())
 	}
 	return result, nil
+}
+
+func execMultiTx(begin Begin, mTx []*MultiTx) error {
+	tx, err := begin.Begin()
+	if err != nil {
+		return errors.As(err)
+	}
+	for _, mt := range mTx {
+		if _, err := tx.Exec(mt.Query, mt.Args...); err != nil {
+			Rollback(tx)
+			return errors.As(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		Rollback(tx)
+		return errors.As(err)
+	}
+	return nil
 }
 
 // fieldsByName fills a values interface with fields from the passed value based

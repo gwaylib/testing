@@ -82,6 +82,11 @@ func Exec(db Execer, querySql string, args ...interface{}) (sql.Result, error) {
 	return db.Exec(querySql, args...)
 }
 
+// 事务执行多个脚本
+func ExecMultiTx(begin Begin, mTx []*MultiTx) error {
+	return execMultiTx(begin, mTx)
+}
+
 // 实现db.Query查询
 func Query(db Queryer, querySql string, args ...interface{}) (*sql.Rows, error) {
 	return db.Query(querySql, args...)
@@ -95,6 +100,7 @@ func QueryRow(db Queryer, querySql string, args ...interface{}) *sql.Row {
 // 添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
 // 关于drvNames的设计说明
 // 因支持一个可变参数, 或未填，将使用默认值:DEFAULT_DRV_NAME
+// TODO: 测试结构体嵌套的情况
 func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...string) (sql.Result, error) {
 	return insertStruct(exec, obj, tbName, drvNames...)
 }
