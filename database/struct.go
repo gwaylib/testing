@@ -100,6 +100,9 @@ func reflectInsertStruct(i interface{}, drvName string) (string, string, []inter
 	inputs := []byte{}
 	vals := []interface{}{}
 	for i, val := range tm.Index {
+		// TODO: get child
+		// fmt.Printf("%+v\n", *val)
+
 		_, ok := val.Options["autoincrement"]
 		if ok {
 			// ignore 'autoincrement' for insert data
