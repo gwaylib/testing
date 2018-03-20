@@ -209,7 +209,10 @@ func queryStructs(db Queryer, obj interface{}, querySql string, args ...interfac
 // 查询一个支持Scan的数据类型
 func queryElem(db Queryer, result interface{}, querySql string, args ...interface{}) error {
 	if err := db.QueryRow(querySql, args...).Scan(result); err != nil {
-		return errors.As(err, args)
+		if sql.ErrNoRows != err {
+			return errors.As(err, args)
+		}
+		return errors.ErrNoData.As(args...)
 	}
 	return nil
 }
