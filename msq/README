@@ -1,0 +1,5 @@
+
+binary client for go see:
+https://github.com/davidpersson/bsa
+
+go get github.com/davidpersson/bsa
