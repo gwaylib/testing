@@ -89,6 +89,9 @@ func travelChild(f *reflectx.FieldInfo, v reflect.Value, order *int, drvName *st
 	childrenLen := len(f.Children)
 	isDriverValue := false
 	switch v.Kind() {
+	case reflect.Invalid:
+		// nil value
+		return
 	case
 		reflect.Bool,
 		reflect.Int,
