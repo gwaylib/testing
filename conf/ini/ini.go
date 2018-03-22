@@ -23,7 +23,11 @@ type File struct {
 }
 
 func (f *File) String(section, key string) string {
-	return f.Section(section).Key(key).String()
+	result := f.Section(section).Key(key).String()
+	if len(result) == 0 {
+		panic(errors.ErrNoData.As(section, key))
+	}
+	return result
 }
 func (f *File) Float64(section, key string) float64 {
 	result, err := f.Section(section).Key(key).Float64()
