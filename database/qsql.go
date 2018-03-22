@@ -50,12 +50,7 @@ func NewMultiTx(query string, args ...interface{}) *MultiTx {
 }
 
 const (
-	addObjSql = `
-INSERT INTO %s
-	(%s)
-VALUES
-	(%s)
-	`
+	addObjSql = "INSERT INTO %s (%s) VALUES (%s);"
 )
 
 // 添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
@@ -75,6 +70,7 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 		return nil, errors.As(err)
 	}
 	execSql := fmt.Sprintf(addObjSql, tbName, names, inputs)
+	fmt.Printf("%s;%+v\n", execSql, vals)
 	result, err := exec.Exec(execSql, vals...)
 	if err != nil {
 		return nil, errors.As(err, execSql)

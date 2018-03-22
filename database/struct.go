@@ -87,7 +87,32 @@ var refxM = reflectx.NewMapperTagFunc("db", func(in string) string {
 func travelChild(f *reflectx.FieldInfo, v reflect.Value, order *int, drvName *string, outputNames *[]byte, outputInputs *[]byte, outputVals *[]interface{}) {
 	*order += 1
 	childrenLen := len(f.Children)
-	if childrenLen == 0 {
+	isDriverValue := false
+	switch v.Kind() {
+	case
+		reflect.Bool,
+		reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64,
+		reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64,
+		reflect.Float32,
+		reflect.Float64,
+		reflect.String:
+		isDriverValue = true
+	default:
+		switch v.Type().String() {
+		case "[]uint8", "time.Time":
+			isDriverValue = true
+		}
+
+	}
+	if isDriverValue {
 		_, ok := f.Options["autoincrement"]
 		if ok {
 			// ignore 'autoincrement' for insert data
