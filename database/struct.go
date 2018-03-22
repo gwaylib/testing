@@ -84,6 +84,47 @@ var refxM = reflectx.NewMapperTagFunc("db", func(in string) string {
 	return strings.Join(trims, ",")
 })
 
+func travelChild(f *reflectx.FieldInfo, v reflect.Value, order *int, drvName *string, outputNames *[]byte, outputInputs *[]byte, outputVals *[]interface{}) {
+	*order += 1
+	childrenLen := len(f.Children)
+	if childrenLen == 0 {
+		_, ok := f.Options["autoincrement"]
+		if ok {
+			// ignore 'autoincrement' for insert data
+			return
+		}
+
+		*outputNames = append(*outputNames, []byte(f.Name+",")...)
+		*outputVals = append(*outputVals, v.Interface())
+		switch {
+		case strings.Index(*drvName, "oracle") > -1, strings.Index(*drvName, "oci8") > -1:
+			*outputInputs = append(*outputInputs, []byte(fmt.Sprintf(":%s,", f.Name))...)
+		case strings.Index(*drvName, "postgres") > -1:
+			*outputInputs = append(*outputInputs, []byte(fmt.Sprintf(":%d,", *order-1))...)
+		case strings.Index(*drvName, "sqlserver") > -1, strings.Index(*drvName, "mssql") > -1:
+			*outputInputs = append(*outputInputs, []byte(fmt.Sprintf("@p%d,", *order-1))...)
+		default:
+			*outputInputs = append(*outputInputs, []byte("?,")...)
+		}
+
+		return
+	}
+
+	for i := 0; i < childrenLen; i++ {
+		child := f.Children[i]
+		if child == nil {
+			// found ignore tag, do next.
+			continue
+		}
+		travelChild(
+			child,
+			reflect.Indirect(v.Field(i)),
+			order, drvName,
+			outputNames, outputInputs, outputVals,
+		)
+	}
+}
+
 func reflectInsertStruct(i interface{}, drvName string) (string, string, []interface{}, error) {
 	v := reflect.ValueOf(i)
 	k := v.Kind()
@@ -99,32 +140,9 @@ func reflectInsertStruct(i interface{}, drvName string) (string, string, []inter
 	names := []byte{}
 	inputs := []byte{}
 	vals := []interface{}{}
-	for i, val := range tm.Index {
-		// TODO: get child
-		// fmt.Printf("%+v\n", *val)
+	order := 0
+	travelChild(tm.Tree, v, &order, &drvName, &names, &inputs, &vals)
 
-		_, ok := val.Options["autoincrement"]
-		if ok {
-			// ignore 'autoincrement' for insert data
-			continue
-		}
-		names = append(names, []byte(val.Name)...)
-		names = append(names, []byte(",")...)
-		vals = append(vals, v.Field(i).Interface())
-
-		switch {
-		// case strings.Index(drvName, "mysql") > -1:
-		// case strings.Index(drvName, "sqlite") > -1:
-		case strings.Index(drvName, "oracle") > -1, strings.Index(drvName, "oci8") > -1:
-			inputs = append(inputs, []byte(fmt.Sprintf(":%s,", val.Name))...)
-		case strings.Index(drvName, "postgres") > -1:
-			inputs = append(inputs, []byte(fmt.Sprintf(":%d,", i))...)
-		case strings.Index(drvName, "sqlserver") > -1, strings.Index(drvName, "mssql") > -1:
-			inputs = append(inputs, []byte(fmt.Sprintf("@p%d,", i))...)
-		default:
-			inputs = append(inputs, []byte("?,")...)
-		}
-	}
 	if len(names) == 0 {
 		panic("No public field in struct")
 	}
