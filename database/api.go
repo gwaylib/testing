@@ -97,34 +97,33 @@ func QueryRow(db Queryer, querySql string, args ...interface{}) *sql.Row {
 	return db.QueryRow(querySql, args...)
 }
 
-// 添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
+// 通过反射添加一条数据，需要结构体至少标注字段名 `db:"name"`, 标签详情请参考github.com/jmoiron/sqlx
 // 关于drvNames的设计说明
 // 因支持一个可变参数, 或未填，将使用默认值:DEFAULT_DRV_NAME
-// TODO: 测试结构体嵌套的情况
 func InsertStruct(exec Execer, obj interface{}, tbName string, drvNames ...string) (sql.Result, error) {
 	return insertStruct(exec, obj, tbName, drvNames...)
 }
 
-// 扫描结果至结构体
+// 通过反射扫描结果至结构体
 // 如果没有数据，errors.ErrNoData
 func ScanStruct(rows Rows, obj interface{}) error {
 	return scanStruct(rows, obj)
 }
 
-// 扫描结果至结构体数组
+// 通过反射扫描结果至结构体数组
 // 如果没有数据，返回成功，不改变原数组的值
 // 代码设计请参阅github.com/jmoiron/sqlx
 func ScanStructs(rows Rows, obj interface{}) error {
 	return scanStructs(rows, obj)
 }
 
-// 查询结果到结构体
+// 通过反射查询结果到结构体
 // 如果没有数据，返回errors.ErrNoData
 func QueryStruct(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	return queryStruct(db, obj, querySql, args...)
 }
 
-// 查询结果到结构体数组
+// 通过反射查询结果到结构体数组
 // 如果没有数据，返回成功，不改变原数组的值
 func QueryStructs(db Queryer, obj interface{}, querySql string, args ...interface{}) error {
 	return queryStructs(db, obj, querySql, args...)

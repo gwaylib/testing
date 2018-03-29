@@ -32,28 +32,28 @@ func (f *File) String(section, key string) string {
 func (f *File) Float64(section, key string) float64 {
 	result, err := f.Section(section).Key(key).Float64()
 	if err != nil {
-		panic(err)
+		panic(errors.As(err, section, key))
 	}
 	return result
 }
 func (f *File) Int64(section, key string) int64 {
 	result, err := f.Section(section).Key(key).Int64()
 	if err != nil {
-		panic(err)
+		panic(errors.As(err, section, key))
 	}
 	return result
 }
 func (f *File) Uint64(section, key string) uint64 {
 	result, err := f.Section(section).Key(key).Uint64()
 	if err != nil {
-		panic(err)
+		panic(errors.As(err, section, key))
 	}
 	return result
 }
 func (f *File) Bool(section, key string) bool {
 	result, err := f.Section(section).Key(key).Bool()
 	if err != nil {
-		panic(err)
+		panic(errors.As(err, section, key))
 	}
 	return result
 }
@@ -84,7 +84,7 @@ func NewIni(rootPath string) *Ini {
 func (ini *Ini) Get(fileName string) *File {
 	f, err := GetFile(ini.rootPath + fileName)
 	if err != nil {
-		panic(err)
+		panic(errors.As(err, ini.rootPath+fileName))
 	}
 	return f
 }
@@ -93,7 +93,7 @@ func (ini *Ini) GetDefault(fileName, defFileName string) *File {
 	f, err := GetFile(ini.rootPath + fileName)
 	if err != nil {
 		if !errors.ErrNoData.Equal(err) {
-			panic(err)
+			panic(errors.As(err, ini.rootPath+fileName))
 		}
 		return ini.Get(defFileName)
 	}

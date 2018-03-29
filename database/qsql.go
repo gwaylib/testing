@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/gwaylib/errors"
-	"github.com/gwaylib/log"
 	"github.com/jmoiron/sqlx/reflectx"
 )
 
@@ -71,7 +70,7 @@ func insertStruct(exec Execer, obj interface{}, tbName string, drvNames ...strin
 		return nil, errors.As(err)
 	}
 	execSql := fmt.Sprintf(addObjSql, tbName, names, inputs)
-	log.Debugf("%s%+v", execSql, vals)
+	// log.Debugf("%s%+v", execSql, vals)
 	result, err := exec.Exec(execSql, vals...)
 	if err != nil {
 		return nil, errors.As(err, execSql)
@@ -239,9 +238,9 @@ func queryStructs(db Queryer, obj interface{}, querySql string, args ...interfac
 func queryElem(db Queryer, result interface{}, querySql string, args ...interface{}) error {
 	if err := db.QueryRow(querySql, args...).Scan(result); err != nil {
 		if sql.ErrNoRows != err {
-			return errors.As(err, args)
+			return errors.As(err, querySql, args)
 		}
-		return errors.ErrNoData.As(args...)
+		return errors.ErrNoData.As(args)
 	}
 	return nil
 }
