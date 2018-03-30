@@ -1,9 +1,3 @@
-
-// 二进制看beanstalkd中的数据
-https://github.com/davidpersson/bsa
-go get github.com/davidpersson/bsa
-
-// 使用列子
 package msq
 
 import (
@@ -28,10 +22,9 @@ func TestMsq(t *testing.T) {
 		fmt.Printf("receive job, tried:%d, job:%+v\n", tried, string(job.Body))
 		return true
 	}
-	go c.Reserve(10*time.Minute, handle)
-	go c.Reserve(10*time.Minute, handle)
-	go c.Reserve(10*time.Minute, handle)
-	go c.Reserve(10*time.Minute, handle)
+	for i := 10; i > 0; i-- {
+		go c.Reserve(10*time.Minute, handle)
+	}
 
 	// 生产者
 	p := NewProducer(100, addr, tube)
@@ -43,13 +36,14 @@ func TestMsq(t *testing.T) {
 		}(i)
 	}
 
+	// 等待结束事件
 	for i := eventSize; i > 0; i-- {
 		<-end
 	}
 
+	fmt.Println("end 1")
 	c.Close()
+	fmt.Println("end 2")
 	p.Close()
-
+	fmt.Println("end 3")
 }
-
-

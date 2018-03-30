@@ -1,12 +1,12 @@
 package msq
 
 import (
-	"errors"
 	"io"
 	"net"
 	"strings"
 	"sync"
 
+	"github.com/gwaylib/errors"
 	beans "github.com/iwanbk/gobeanstalk"
 )
 
@@ -14,6 +14,79 @@ import (
 type Producer interface {
 	io.Closer
 	Put(data []byte) error
+}
+
+type producer struct {
+	addr        string
+	tube        string
+	borrowEvent chan bool
+	poolSync    sync.Mutex
+	curPoolSize int
+	maxPoolSize int
+	isClosed    bool
+	pool        sync.Pool
+}
+
+// 通过一个连接池发送数据给beanstalkd，若需要顺序发送，请将池设定为1
+func (p *producer) Put(data []byte) error {
+	p.poolSync.Lock()
+	if p.isClosed {
+		return errors.New("producer has closed")
+	}
+	p.poolSync.Unlock()
+
+	// 借调事件, 若超过池的大小，需要等待池的归还后才能继续
+	p.borrowEvent <- true
+	defer func() {
+		<-p.borrowEvent
+	}()
+
+	conn := p.pool.Get().(*conn)
+	defer p.pool.Put(conn)
+
+	if err := conn.put(data); err != nil {
+		return errors.As(err)
+	}
+	return nil
+}
+
+func (p *producer) Close() error {
+	p.poolSync.Lock()
+	p.isClosed = true
+	p.poolSync.Unlock()
+
+	for i := p.maxPoolSize; i > 0; i-- {
+		p.borrowEvent <- true
+	}
+	// 等待所有输出都完成后关闭各个连接
+	for i := p.maxPoolSize; i > 0; i-- {
+		<-p.borrowEvent
+	}
+
+	for i := p.curPoolSize; i > 0; i-- {
+		conn := p.pool.Get().(*conn)
+		conn.disconn()
+	}
+	return nil
+}
+
+// NewProducer create Producer object.
+func NewProducer(size int, addr, tube string) Producer {
+	if size < 1 {
+		panic("need size > 0")
+	}
+	p := &producer{
+		addr:        addr,
+		tube:        tube,
+		borrowEvent: make(chan bool, size),
+	}
+	p.pool.New = func() interface{} {
+		p.poolSync.Lock()
+		defer p.poolSync.Unlock()
+		p.curPoolSize += 1
+		return newConn(addr, tube)
+	}
+	return p
 }
 
 // ErrClosed closed by Close
@@ -26,61 +99,32 @@ func isBrokenPipeErr(err error) bool {
 	return false
 }
 
-// NewProducer create Producer object.
-func NewProducer(uri, tube string) Producer {
-	return newConn(uri, tube)
-}
-
-var pSync = sync.Mutex{}
-var pConns = map[string]Producer{}
-
-var conns = &sync.Pool{
-	New: func() interface{} {
-		return nil
-	},
-}
-
-func GetProducer(uri, tube string) Producer {
-	if len(uri) == 0 {
-		panic("need uri")
-	}
-	if len(tube) == 0 {
-		panic("need tube name")
-	}
-
-	key := uri + "/" + tube
-
-	p := NewProducer(uri, tube)
-	pConns[key] = p.(*conn)
-	return p
-}
-
 // conn implements Producer and Workder and io.Closer
 type conn struct {
-	uri, tube string
-	conn      *beans.Conn
-	mu        sync.Mutex
-	closed    bool
+	addr, tube string
+	mu         sync.Mutex
+	conn       *beans.Conn
+	closed     bool
 }
 
-func newConn(uri, tube string) *conn {
+func newConn(addr, tube string) *conn {
 	return &conn{
-		uri:  uri,
+		addr: addr,
 		tube: tube,
 	}
 }
 
-func (p *conn) dial() error {
+func (p *conn) connect() error {
 	if p.conn != nil {
 		return nil
 	}
 
 	// conn
-	kon, err := net.DialTimeout("tcp", p.uri, 20*1e9)
+	kon, err := net.DialTimeout("tcp", p.addr, 20*1e9)
 	if err != nil {
 		return err
 	}
-	p.conn, _ = beans.NewConn(kon, p.uri)
+	p.conn, _ = beans.NewConn(kon, p.addr)
 	// tube
 	if err := p.conn.Use(p.tube); err != nil {
 		p.disconn()
@@ -94,27 +138,7 @@ func (p *conn) disconn() error {
 		p.conn.Quit()
 		p.conn = nil
 	}
-	return nil
-}
-
-func (p *conn) Put(data []byte) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.isClosed() {
-		return ErrClosed
-	}
-
-	if err := p.dial(); err != nil {
-		p.disconn()
-		return err
-	}
-
-	_, err := p.conn.Put(data, 0, 0, 30)
-	if err != nil {
-		p.disconn()
-		return err
-	}
+	p.closed = true
 	return nil
 }
 
@@ -122,12 +146,19 @@ func (p *conn) isClosed() bool {
 	return p.closed
 }
 
-func (p *conn) Close() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.closed {
-		return nil
+func (p *conn) put(data []byte) error {
+	if p.isClosed() {
+		return ErrClosed
 	}
-	p.closed = true
-	return p.disconn()
+
+	if err := p.connect(); err != nil {
+		p.disconn()
+		return err
+	}
+
+	if _, err := p.conn.Put(data, 0, 0, 30); err != nil {
+		p.disconn()
+		return err
+	}
+	return nil
 }

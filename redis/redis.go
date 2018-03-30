@@ -85,13 +85,19 @@ func NewRediStoreWithPool(pool *redis.Pool) (*RediStore, error) {
 		// http://godoc.org/github.com/garyburd/redigo/redis#Pool
 		Pool: pool,
 	}
-	_, err := rs.ping()
-	return rs, err
+	return rs, nil
 }
 
 // Close closes the underlying *redis.Pool
 func (s *RediStore) Close() error {
 	return s.Pool.Close()
+}
+
+// Get a connect from Pool, and need manully closed
+// conn := s.Conn()
+// defer conn.Close()
+func (s *RediStore) Conn() redis.Conn {
+	return s.Pool.Get()
 }
 
 // Delete removes the session from redis.
@@ -103,17 +109,6 @@ func (s *RediStore) Delete(key string) error {
 		return err
 	}
 	return nil
-}
-
-// ping does an internal ping against a server to check if it is alive.
-func (s *RediStore) ping() (bool, error) {
-	conn := s.Pool.Get()
-	defer conn.Close()
-	data, err := conn.Do("PING")
-	if err != nil || data == nil {
-		return false, err
-	}
-	return (data == "PONG"), nil
 }
 
 // save stores the session in redis.
