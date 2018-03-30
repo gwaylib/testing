@@ -35,6 +35,10 @@ import (
 	beans "github.com/iwanbk/gobeanstalk"
 )
 
+func IsErrNotFound(err error) bool {
+	return strings.Index(strings.ToLower(err.Error()), "not found") == 0
+}
+
 // 最大推送次数
 const MAX_TRY_TIMES = 48 + 30 + 1
 
@@ -146,6 +150,7 @@ func (c *worker) reserve() {
 		select {
 		case <-c.sig_exit_reserve:
 			c.sig_end <- true
+			return
 		default:
 			c.mutex.Lock()
 			// 检查连接
@@ -189,8 +194,6 @@ func (c *worker) Close() error {
 	return nil
 }
 
-var ErrNotFound = errors.New("Not Found")
-
 func (c *worker) connect() error {
 	// do close at first
 	if c.conn != nil {
@@ -198,7 +201,7 @@ func (c *worker) connect() error {
 	}
 
 	// connect
-	c.log.Info("msq connect:" + c.tubename)
+	c.log.Info("msq-c connect:" + c.tubename)
 	kon, err := net.DialTimeout("tcp", c.addr, 20*1e9)
 	if err != nil {
 		c.connErrTimes++
@@ -243,7 +246,7 @@ func (c *worker) dealConnErrTimes(times int, err error) {
 
 // do job
 func (c *worker) do(job *beans.Job) error {
-	result := make(chan error, 1)
+	result := make(chan bool, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), c.workout)
 	defer cancel()
 
@@ -265,17 +268,18 @@ func (c *worker) do(job *beans.Job) error {
 			} else {
 				c.nextTry(job)
 			}
-			result <- nil
+			result <- true
 			close(result)
 		}()
+
 		deal = c.handle(ctx, job, times)
 	}(ctx)
 
 	select {
-	case err := <-result:
-		return err
+	case <-result:
+		return nil
 	case <-ctx.Done():
-		return errors.New("handle time out").As(job)
+		return errors.New("handle time out").As(ctx.Err(), job)
 	}
 }
 
@@ -303,7 +307,7 @@ func (c *worker) nextTry(job *beans.Job) {
 	}
 
 	if err := c.conn.Release(job.ID, 0, time.Duration(sleep*1e9)); err != nil {
-		if !ErrNotFound.Equal(err) {
+		if !IsErrNotFound(err) {
 			c.log.Error(errors.As(err, job))
 		}
 	}
@@ -314,7 +318,7 @@ func (c *worker) delJob(job *beans.Job) {
 	id := job.ID
 	delete(c.tryHistory, id)
 	if err := c.conn.Delete(id); err != nil {
-		if !ErrNotFound.Equal(err) {
+		if !IsErrNotFound(err) {
 			log.Error(errors.As(err))
 		}
 	}
@@ -324,6 +328,6 @@ func (c *worker) disconn() {
 	if c.conn != nil {
 		c.conn.Quit()
 		c.conn = nil
-		c.log.Info("msq closed:" + c.tubename)
+		c.log.Info("msq-c closed:" + c.tubename)
 	}
 }
