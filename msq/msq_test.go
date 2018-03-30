@@ -12,7 +12,6 @@ import (
 func TestMsq(t *testing.T) {
 	addr := "127.0.0.1:11300"
 	tube := "testing_tube"
-	eventSize := 50000
 	end := make(chan bool, 1)
 	dealing := make(chan bool, 1)
 
@@ -29,6 +28,7 @@ func TestMsq(t *testing.T) {
 
 	// 生产者
 	p := NewProducer(1000, addr, tube)
+	eventSize := 50000
 	for i := eventSize; i > 0; i-- {
 		in := i
 		// go func(in int) {
