@@ -1,10 +1,9 @@
 
 # Init docker nsqd
 
-mkdir ~/docker/nsq
+mkdir -p ~/docker/nsq
 
-echo "
-# !/bin/sh
+echo '# !/bin/sh
 
 pwd_dir=`pwd`
 data_dir=$pwd_dir/var/nsq/data
@@ -23,9 +22,10 @@ sudo docker run -d --restart=always --net=host \
     --mount=type=bind,src=${data_dir},dst=/data \
     nsqio/nsq /nsqd \
     --data-path=/data
-" >~/docker/nsq
+'>~/docker/nsq/start.sh
 
 cd ~/docker/nsq
+chmod +x start.sh
 ./start.sh
 
 
