@@ -20,7 +20,6 @@ package msq
 import (
 	"context"
 	"io"
-	"net"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -32,7 +31,7 @@ import (
 	"github.com/gwaylib/log/logger"
 	"github.com/gwaylib/log/logger/adapter/stdio"
 	"github.com/gwaylib/log/logger/proto"
-	beans "github.com/kr/beanstalk"
+	nsq "github.com/nsqio/go-nsq"
 )
 
 func IsErrNotFound(err error) bool {
@@ -43,7 +42,7 @@ func IsErrNotFound(err error) bool {
 const MAX_TRY_TIMES = 48 + 30 + 1
 
 type Job struct {
-	ID   uint64
+	ID   nsq.MessageID
 	Body []byte
 }
 
@@ -117,7 +116,8 @@ type worker struct {
 	handle HandleContext
 
 	// server connection
-	conn *beans.TubeSet
+	conn     *nsq.Conn
+	delegate *Delegate
 
 	// work timeout for dealock
 	workout time.Duration
@@ -125,10 +125,7 @@ type worker struct {
 	// log error times
 	connErrTimes int
 
-	tryHistory map[uint64]int
-
-	// 运行结果
-	job_queue chan *Job
+	tryHistory map[nsq.MessageID]int
 
 	// signal command.
 	sig_exit_reserve chan bool
@@ -143,10 +140,10 @@ func newConsumer(addr, tube string, handle HandleContext, timeout time.Duration)
 		tubename:         tube,
 		handle:           handle,
 		workout:          timeout,
-		tryHistory:       make(map[uint64]int),
-		job_queue:        make(chan *Job, 1),
+		tryHistory:       make(map[nsq.MessageID]int),
 		sig_exit_reserve: make(chan bool, 1),
 		sig_end:          make(chan bool, 1),
+		delegate:         NewDelegate(),
 	}
 }
 
@@ -168,15 +165,9 @@ func (c *worker) reserve() {
 			}
 			c.mutex.Unlock()
 
-			id, body, err := c.conn.Reserve(time.Duration(c.workout))
-			if err != nil {
-				if strings.Index(err.Error(), "use of closed network connection") < 0 {
-					c.log.Warn(errors.As(err))
-					// 重连
-					c.disconn()
-				}
-				continue
-			}
+			msg := <-c.delegate.msg
+			id, body := msg.ID, msg.Body
+			// id, body, err := c.conn.Reserve(time.Duration(c.workout))
 			job := &Job{id, body}
 
 			c.mutex.Lock()
@@ -208,13 +199,23 @@ func (c *worker) connect() error {
 
 	// connect
 	c.log.Info("msq-c connect:" + c.tubename)
-	kon, err := net.DialTimeout("tcp", c.addr, 20*1e9)
+	cfg := nsq.NewConfig()
+	cfg.OutputBufferSize = 16384
+	conn := nsq.NewConn(c.addr, cfg, c.delegate)
+	_, err := conn.Connect()
 	if err != nil {
 		c.connErrTimes++
 		c.dealConnErrTimes(c.connErrTimes, errors.As(err))
 		return errors.As(err)
 	}
-	c.conn = beans.NewTubeSet(beans.NewConn(kon), c.tubename)
+	c.conn = conn
+	//	kon, err := net.DialTimeout("tcp", c.addr, 20*1e9)
+	//	if err != nil {
+	//		c.connErrTimes++
+	//		c.dealConnErrTimes(c.connErrTimes, errors.As(err))
+	//		return errors.As(err)
+	//	}
+	//	c.conn = beans.NewTubeSet(beans.NewConn(kon), c.tubename)
 
 	c.connErrTimes = 0
 	return nil
@@ -304,7 +305,8 @@ func (c *worker) nextTry(job *Job) {
 		return
 	}
 
-	if err := c.conn.Conn.Release(job.ID, 0, time.Duration(sleep*1e9)); err != nil {
+	if err := c.conn.WriteCommand(nsq.Requeue(job.ID, time.Duration(sleep*1e9))); err != nil {
+		// if err := c.conn.Conn.Release(job.ID, 0, time.Duration(sleep*1e9)); err != nil {
 		if !IsErrNotFound(err) {
 			c.log.Error(errors.As(err, job))
 		}
@@ -315,7 +317,7 @@ func (c *worker) nextTry(job *Job) {
 func (c *worker) delJob(job *Job) {
 	id := job.ID
 	delete(c.tryHistory, id)
-	if err := c.conn.Conn.Delete(id); err != nil {
+	if err := c.conn.WriteCommand(nsq.Finish(job.ID)); err != nil {
 		if !IsErrNotFound(err) {
 			log.Error(errors.As(err))
 		}
@@ -324,7 +326,7 @@ func (c *worker) delJob(job *Job) {
 
 func (c *worker) disconn() {
 	if c.conn != nil {
-		c.conn.Conn.Close()
+		c.conn.Close()
 		c.conn = nil
 		c.log.Info("msq-c closed:" + c.tubename)
 	}

@@ -1,0 +1,31 @@
+
+# Init docker nsqd
+
+mkdir ~/docker/nsq
+
+echo "
+# !/bin/sh
+
+pwd_dir=`pwd`
+data_dir=$pwd_dir/var/nsq/data
+mkdir -p $data_dir|exit 1
+
+
+# load images
+sudo docker pull nsqio/nsq | exit 1
+
+# # for debug
+# # need to stop the release at first.
+# 
+# sudo docker run -it --rm --net=host \
+sudo docker run -d --restart=always --net=host \
+    --name=nsqd \
+    --mount=type=bind,src=${data_dir},dst=/data \
+    nsqio/nsq /nsqd \
+    --data-path=/data
+" >~/docker/nsq
+
+cd ~/docker/nsq
+./start.sh
+
+

@@ -28,7 +28,7 @@ func TestMsq(t *testing.T) {
 		dealing <- true
 		return true
 	}
-	for i := 100; i > 0; i-- {
+	for i := 1; i > 0; i-- {
 		go c.Reserve(10*time.Minute, handle)
 	}
 	// 等待消费者就绪
@@ -36,7 +36,7 @@ func TestMsq(t *testing.T) {
 
 	// 生产者
 	p := NewProducer(1000, addr, tube)
-	eventSize := 50000
+	eventSize := 1 // 50000
 	seed := time.Now().UnixNano()
 	for i := eventSize; i > 0; i-- {
 		in := i
