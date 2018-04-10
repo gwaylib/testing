@@ -39,8 +39,10 @@ dsn: username:passwd@tcp(127.0.0.1:3306)/log?timeout=30s&strict=true&loc=Local&p
 ## 性能级别建议使用标准库以便可灵活运用
 ``` text
 // 导入驱动库
-import <database driver package>
-import "github.com/gwaylib/datastore/database"
+import (
+    "github.com/gwaylib/datastore/database"
+    _ "github.com/go-sql-driver/mysql"
+)
 ```
 
 ### 使用标准查询
@@ -120,12 +122,16 @@ if err := tx.Commit(); err != nil {
     database.Rollback(tx)
     // ...
 }
+```
 
 ## 快速查询, 用于通用性的查询，例如js页面返回
 ### 查询结果到结构体
 ``` text
-import <database driver package>
-import "github.com/gwaylib/datastore/database"
+import (
+    "github.com/gwaylib/datastore/database"
+    _ "github.com/go-sql-driver/mysql"
+)
+
 
 // 定义表结构体
 type User struct{
@@ -192,8 +198,11 @@ if len(u) == 0{
 
 ### 查询结果到整型
 ```text
-import <database driver package>
-import "github.com/gwaylib/datastore/database"
+// 导入驱动库
+import (
+    "github.com/gwaylib/datastore/database"
+    _ "github.com/go-sql-driver/mysql"
+)
 
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
@@ -204,8 +213,12 @@ count, err := database.QueryInt(mdb, "SELECT count(*) FROM a WHERE id = ?", id)
 
 ### 批量查询
 ```text
-import <database driver package>
-import "github.com/gwaylib/datastore/database"
+// 导入驱动库
+import (
+    "github.com/gwaylib/datastore/database"
+    _ "github.com/go-sql-driver/mysql"
+)
+
 
 mdb := database.CacheDB("./datastore.cfg", "master")
 
