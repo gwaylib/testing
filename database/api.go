@@ -83,8 +83,8 @@ func Exec(db Execer, querySql string, args ...interface{}) (sql.Result, error) {
 }
 
 // 事务执行多个脚本
-func ExecMultiTx(begin Begin, mTx []*MultiTx) error {
-	return execMultiTx(begin, mTx)
+func ExecMultiTx(tx *sql.Tx, mTx []*MultiTx) error {
+	return execMultiTx(tx, mTx)
 }
 
 // 实现db.Query查询

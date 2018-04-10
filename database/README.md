@@ -97,7 +97,6 @@ if _, err := database.InsertStruct(mdb, u, "testing", "mysql"); err != nil{
 
 ### 批量操纵数据
 ``` text
-mdb := database.CacheDB("./datastore.cfg", "master")
 multiTx := []*database.MultiTx{}
 multiTx = append(multiTx, database.NewMultiTx(
     "UPDATE testing SET name = ? WHERE id = ?",
@@ -107,7 +106,18 @@ multiTx = append(multiTx, database.NewMultiTx(
     "UPDATE testing SET name = ? WHERE id = ?",
     id,
 ))
-if err := database.ExecMutlTx(mdb, multiTx); err != nil{
+
+// do exec multi tx
+tx, err := database.CacheDB("./datastore.cfg", "master").Begin()
+if err != nil{
+    // ...
+}
+if err := database.ExecMutlTx(tx, multiTx); err != nil {
+    database.Rollback(tx)
+    // ...
+}
+if err := tx.Commit(); err != nil {
+    database.Rollback(tx)
     // ...
 }
 
