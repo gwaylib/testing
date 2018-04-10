@@ -10,7 +10,7 @@
 //
 // 开启两个队列去并发读取
 // go c.Reserve(10 * time.Minute, handle)
-// go c.Reserve(10 * time.Minute, handle)
+// // go c.Reserve(10 * time.Minute, handle) // 警告：目前beanstalkd消费者并发连接读取测试未通过
 //
 // // 在适当的地方关闭连接
 // // c.Close() // Stop func to stop working
@@ -36,7 +36,7 @@ import (
 )
 
 func IsErrNotFound(err error) bool {
-	return strings.Index(strings.ToLower(err.Error()), "not found") == 0
+	return strings.Index(strings.ToLower(err.Error()), "not found") >= 0
 }
 
 // 最大推送次数

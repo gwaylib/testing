@@ -1,4 +1,4 @@
-package msq
+package nsq
 
 import (
 	"io"
@@ -119,12 +119,11 @@ func (p *conn) connect() error {
 		return nil
 	}
 
-	c := nsq.NewConn(p.addr, nsq.NewConfig(), nil)
-	id, err := c.Connect()
+	c := nsq.NewConn(p.addr, nsq.NewConfig(), NewDelegate("producer"))
+	_, err := c.Connect()
 	if err != nil {
 		return err
 	}
-	log.Debug(id)
 	p.conn = c
 	return nil
 }
@@ -154,12 +153,12 @@ func (p *conn) put(data []byte) error {
 
 	if err := p.connect(); err != nil {
 		p.disconn()
-		return err
+		return errors.As(err)
 	}
 
 	if err := p.conn.WriteCommand(nsq.Publish(p.tube, data)); err != nil {
 		p.disconn()
-		return err
+		return errors.As(err)
 	}
 	return nil
 }

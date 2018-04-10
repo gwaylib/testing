@@ -3,7 +3,7 @@
 //
 // c := NewConsumer("localhost:11130", "test")
 //
-// handle := func(ctx context.Context, job *beans.Job, tried int) bool{
+// handle := func(ctx context.Context, job *Job, tried int) bool{
 //		// 处理结束后返回true删除数据
 //		return true
 // }
@@ -15,11 +15,13 @@
 // // 在适当的地方关闭连接
 // // c.Close() // Stop func to stop working
 //
-package msq
+package nsq
 
 import (
 	"context"
 	"io"
+	stdlog "log"
+	"net"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -143,33 +145,30 @@ func newConsumer(addr, tube string, handle HandleContext, timeout time.Duration)
 		tryHistory:       make(map[nsq.MessageID]int),
 		sig_exit_reserve: make(chan bool, 1),
 		sig_end:          make(chan bool, 1),
-		delegate:         NewDelegate(),
+		delegate:         NewDelegate("consumer"),
 	}
 }
 
 func (c *worker) reserve() {
 	for {
+		c.mutex.Lock()
+		// 检查连接
+		if c.conn == nil {
+			if err := c.connect(); err != nil {
+				c.mutex.Unlock()
+				c.log.Warn(errors.As(err))
+				continue
+			}
+		}
+		c.mutex.Unlock()
+
 		select {
 		case <-c.sig_exit_reserve:
 			c.sig_end <- true
 			return
-		default:
-			c.mutex.Lock()
-			// 检查连接
-			if c.conn == nil {
-				if err := c.connect(); err != nil {
-					c.mutex.Unlock()
-					c.log.Warn(errors.As(err))
-					continue
-				}
-			}
-			c.mutex.Unlock()
-
-			msg := <-c.delegate.msg
+		case msg := <-c.delegate.msg:
 			id, body := msg.ID, msg.Body
-			// id, body, err := c.conn.Reserve(time.Duration(c.workout))
 			job := &Job{id, body}
-
 			c.mutex.Lock()
 			if err := c.do(job); err != nil {
 				c.log.Warn(err.Error())
@@ -199,9 +198,19 @@ func (c *worker) connect() error {
 
 	// connect
 	c.log.Info("msq-c connect:" + c.tubename)
-	cfg := nsq.NewConfig()
-	cfg.OutputBufferSize = 16384
-	conn := nsq.NewConn(c.addr, cfg, c.delegate)
+	//	config := nsq.NewConfig()
+	//	// so that the test can simulate binding consumer to specified address
+	//	config.LocalAddr, _ = net.ResolveTCPAddr("tcp", "127.0.0.1:0")
+	//	config.OutputBufferSize = 16384
+	config := nsq.NewConfig()
+	// so that the test can simulate binding consumer to specified address
+	config.LocalAddr, _ = net.ResolveTCPAddr("tcp", "127.0.0.1:0")
+	// so that the test can simulate reaching max requeues and a call to LogFailedMessage
+	config.DefaultRequeueDelay = 0
+	// so that the test wont timeout from backing off
+	config.MaxBackoffDuration = time.Millisecond * 50
+
+	conn := nsq.NewConn(c.addr, config, c.delegate)
 	_, err := conn.Connect()
 	if err != nil {
 		c.connErrTimes++
@@ -209,13 +218,26 @@ func (c *worker) connect() error {
 		return errors.As(err)
 	}
 	c.conn = conn
-	//	kon, err := net.DialTimeout("tcp", c.addr, 20*1e9)
-	//	if err != nil {
-	//		c.connErrTimes++
-	//		c.dealConnErrTimes(c.connErrTimes, errors.As(err))
-	//		return errors.As(err)
-	//	}
-	//	c.conn = beans.NewTubeSet(beans.NewConn(kon), c.tubename)
+
+	conn.SetLogger(stdlog.New(os.Stderr, "", stdlog.Flags()), nsq.LogLevelDebug, "")
+	if err := conn.WriteCommand(nsq.Subscribe(c.tubename, "default")); err != nil {
+		c.disconn()
+
+		c.connErrTimes++
+		c.dealConnErrTimes(c.connErrTimes, errors.As(err))
+		return errors.As(err)
+	}
+
+	// TODO: fix this
+	count := int64(1)
+	conn.SetRDY(count)
+	if err := conn.WriteCommand(nsq.Ready(int(count))); err != nil {
+		c.disconn()
+
+		c.connErrTimes++
+		c.dealConnErrTimes(c.connErrTimes, errors.As(err))
+		return errors.As(err)
+	}
 
 	c.connErrTimes = 0
 	return nil
