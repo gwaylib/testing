@@ -196,7 +196,7 @@ if len(u) == 0{
 
 ```
 
-### 查询结果到整型
+### 查询单个元素结果
 ```text
 // 导入驱动库
 import (
@@ -207,8 +207,10 @@ import (
 mdb := database.CacheDB("./datastore.cfg", "master")
 // or mdb = <sql.Tx>
 // or mdb = <sql.Stmt>
-count, err := database.QueryInt(mdb, "SELECT count(*) FROM a WHERE id = ?", id)
-// ...
+count := 0
+if err := database.QueryElem(mdb, &count, "SELECT count(*) FROM a WHERE id = ?", id); err != nil{
+    // ...
+}
 ```
 
 ### 批量查询
@@ -246,30 +248,33 @@ LIMIT ?, ?
 	}
 )
 
-// 表格方式查询
+// 查询总数量
+count := 0
+if err := database.QueryElem(
+    mdb,
+    &count, 
+    userInfoQsql.FmtTempate("user_info_200601").CountSql,
+    "13800138000",
+); err != nil{
+    // ...
+}
+
+// 表格方式查询结果集
 result, err := database.QueryTable(
     mdb,
     userInfoQsql.FmtTempate("user_info_200601").DataSql,
-    "13800130000", currPage*10, 10)
+    "13800138000", currPage*10, 10)
 if err != nil {
-    if !errors.ErrNoData.Equal(err) {
-        log.Debug(errors.As(err, mobile, pid, uid))
-        return c.String(500, "系统错误")
-    }
-    // 空数据
+    // ...
 }
 
-// 或者对象方式查询
+// 或者对象方式查询结果集
 result, err := database.QueryMap(
     mdb,
     userInfoQsql.FmtTempate("user_info_200601").DataSql,
     "13800130000",
     currPage*10, 10) 
 if err != nil {
-    if !errors.ErrNoData.Equal(err) {
-        log.Debug(errors.As(err, mobile, pid, uid))
-        return c.String(500, "系统错误")
-    }
-    // 无数据 
+    // ...
 }
 ```
