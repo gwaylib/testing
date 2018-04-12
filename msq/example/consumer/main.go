@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gwaylib/datastore/msq"
+	"github.com/gwaylib/testing/msq"
 )
 
 func main() {
@@ -21,17 +21,16 @@ func main() {
 	_ = result
 	handle := func(ctx context.Context, job *msq.Job, tried int) bool {
 		// 检查并发消息的安全性, 若出现重复，说明读取是不安全的
-		// 	oldID, ok := result.LoadOrStore(string(job.Body), job.ID)
-		// 	if ok {
-		// 		panic(fmt.Sprintf("repeated:%d,%d,%s", oldID, job.ID, string(job.Body)))
-		// 	}
+		// 注意，测试中发现并发读取时存在重复接收到数据的问题
+		oldID, ok := result.LoadOrStore(string(job.Body), job.ID)
+		if ok {
+			panic(fmt.Sprintf("repeated:%d,%d,%s", oldID, job.ID, string(job.Body)))
+		}
 		fmt.Printf("receive job, tried:%d, job:%+v\n", tried, string(job.Body))
 		dealing <- true
 		return true
 	}
-	for i := 100; i > 0; i-- {
-		go c.Reserve(10*time.Minute, handle)
-	}
+	go c.Reserve(20*time.Minute, handle)
 	// 等待消费者就绪
 	time.Sleep(1e9)
 
